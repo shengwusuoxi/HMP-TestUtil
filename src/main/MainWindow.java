@@ -207,11 +207,11 @@ public class MainWindow extends JFrame {
 		sp.setViewportView(txaInfo);
 
 		JLabel lblSSHIP = new JLabel(Strings.getString("MainWindow.lblSSHIP.text")); 
-		lblSSHIP.setBounds(20, 53, 102, 23);
+		lblSSHIP.setBounds(20, 201, 102, 23);
 		this.getContentPane().add(lblSSHIP);
 
 		tfSSHIP = new JTextField();
-		tfSSHIP.setBounds(115, 53, 245, 23);
+		tfSSHIP.setBounds(115, 201, 245, 23);
 		this.getContentPane().add(tfSSHIP);
 		tfSSHIP.setColumns(10);
 
@@ -244,7 +244,7 @@ public class MainWindow extends JFrame {
 
 		JButton btnSSHCnn = new JButton(Strings.getString("MainWindow.btnSSHCnn.text")); 
 		btnSSHCnn.addActionListener(new SSHCnnBtnListener());
-		btnSSHCnn.setBounds(377, 90, 135, 60);
+		btnSSHCnn.setBounds(377, 164, 135, 60);
 		this.getContentPane().add(btnSSHCnn);
 
 		JLabel lblModelTpl = new JLabel(Strings.getString("MainWindow.lblModelTpl.text")); 
@@ -252,7 +252,7 @@ public class MainWindow extends JFrame {
 		getContentPane().add(lblModelTpl);
 
 		JLabel lblPlatformIP = new JLabel(Strings.getString("MainWindow.lblPlatformIP.text")); 
-		lblPlatformIP.setBounds(20, 201, 102, 23);
+		lblPlatformIP.setBounds(20, 53, 102, 23);
 		getContentPane().add(lblPlatformIP);
 
 		JComboBox cbModelTpl = new JComboBox(ModelTplStrings);
@@ -301,7 +301,7 @@ public class MainWindow extends JFrame {
 
 		tfPlatformIP = new JTextField();
 		tfPlatformIP.setColumns(10);
-		tfPlatformIP.setBounds(115, 201, 245, 23);
+		tfPlatformIP.setBounds(115, 53, 245, 23);
 		getContentPane().add(tfPlatformIP);
 
 		JButton btnSendCmd = new JButton(Strings.getString("MainWindow.btnSendCmd.text")); 
@@ -320,7 +320,7 @@ public class MainWindow extends JFrame {
 		
 		JButton btnResCnn = new JButton(Strings.getString("MainWindow.btnResCnn.text")); 
 		btnResCnn.addActionListener(new ResCnnBtnListener());
-		btnResCnn.setBounds(377, 164, 135, 60);
+		btnResCnn.setBounds(377, 90, 135, 60);
 		getContentPane().add(btnResCnn);
 
 	}
