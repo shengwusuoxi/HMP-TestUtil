@@ -7,7 +7,10 @@ import java.awt.EventQueue;
 import java.awt.SystemColor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.rmi.Naming;
+import java.util.Arrays;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -19,6 +22,7 @@ import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 
 public class MainWindow extends JFrame {
@@ -27,18 +31,18 @@ public class MainWindow extends JFrame {
 	public static final String LINE_FEED = System.getProperty("line.separator");//换行符
 	public static final String PLATFORM_NAME = Strings.getString("MainWindow.PLATFORM_NAME");//换行符
 
-	final String[] ModelTplStrings = { "HP_BLADE", "HP_FRAME", "DELL_BLADE", "IBM_BLADE", 
-			"IBM_FRAME", "ZTE_BLADE", "HUAWEI_FRAME"
+	static final String[] ModelTplStrings = { "HP_BLADE", "HP_FRAME", "DELL_BLADE", "IBM_BLADE", 
+			"IBM_FRAME", "HUAWEI_FRAME", "ZTE_BLADE"
 	};
 
 	final String[] codeStrings = {"buildcollector","startdebug", "stopdebug", "startcollect", "stopcollect", "resetallinfo", 
-			"reboot", "showcountinfo", "showhistory", "showstatis", "showallinfo",
+			"reboot", "showcountinfo", "showhistory", "showstatis", "showallinfo","showdbconninfo",
 			"showsshinfo", "maxsize", "listsize", "cachesize", "showpoolinfo",
 			"showcachepoolinfo", "showsysteminfo"
 	};
 
 	final String[] codeStringsCHS = { "建立采集器","打开调试", "关闭调试", "开启采集", "关闭采集", "重置所有信息", 
-			"重启采集服务器", "显示计数信息", "显示历史信息", "显示统计", "显示所有信息",
+			"重启采集服务器", "显示计数信息", "显示历史信息", "显示统计", "显示所有信息","测试数据库连接",
 			"测试所有SSH连接", "显示采集池最大容量", "显示采集池当前数", "显示缓冲池当前数", "显示采集池信息",
 			"显示缓冲池信息", "显示系统信息"
 	};
@@ -54,22 +58,34 @@ public class MainWindow extends JFrame {
 	private String buildCode = "buildcollector";
 	private String modelTpl = ModelTplStrings[0];
 	private JTextField tfAssetID;
+	JRadioButton rdbtnDefault;
+	JRadioButton rdbtnLocal;
+	JRadioButton rdbtnLocalSSH;
+	JComboBox cbModelTpl;
 
 
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MainWindow window = new MainWindow();
-					window.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+		if(args.length > 0){
+			if(args.length == 1){
+				HMP.printUsage();
+			}else{
+				HMP.execute(args);
 			}
-		});
+		}else{
+			EventQueue.invokeLater(new Runnable() {
+				public void run() {
+					try {
+						MainWindow window = new MainWindow();
+						window.setVisible(true);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+		}
 	}
 
 	/**
@@ -112,7 +128,7 @@ public class MainWindow extends JFrame {
 			// TODO Auto-generated method stub
 			String retInfo = testResConnection(tfCltIP.getText(),inflateMessage());
 			txaInfo.setText(retInfo.trim());
-		}
+		}             
 
 	}	
 
@@ -120,7 +136,6 @@ public class MainWindow extends JFrame {
 
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			// TODO Auto-generated method stub
 			String retInfo = sendCommand(tfCltIP.getText(),inflateMessage());
 			txaInfo.setText(retInfo.trim());
 		}
@@ -148,8 +163,16 @@ public class MainWindow extends JFrame {
 			int i = cb.getSelectedIndex();
 			if(i == 0){
 				code = buildCode;
+				tfAssetID.setEnabled(true);
+				rdbtnDefault.setEnabled(true);
+				rdbtnLocal.setEnabled(true);
+				rdbtnLocalSSH.setEnabled(true);
 			}else{
 				code = codeStrings[i];
+				tfAssetID.setEnabled(false);
+				rdbtnDefault.setEnabled(false);
+				rdbtnLocal.setEnabled(false);
+				rdbtnLocalSSH.setEnabled(false);
 			}
 		}
 
@@ -173,23 +196,63 @@ public class MainWindow extends JFrame {
 			}
 		}
 	}
+	
+	class AssetIPTfFoucusListener implements FocusListener{
+		
+		String preIP = "";
+		@Override
+		public void focusLost(FocusEvent e) {
+			// TODO Auto-generated method stub
+			String cltIP = tfCltIP.getText();
+			if(!"".equals(cltIP) && !"".equals(tfSSHIP.getText())){
+				if(!preIP.equals(tfSSHIP.getText())){
+					tfAssetID.setText("");
+					cbModelTpl.setSelectedItem(null);
+				}
+				new Thread(new AssetInfoSetThread()).start();
+			}
+		}
+		
+		@Override
+		public void focusGained(FocusEvent e) {
+			// TODO Auto-generated method stub
+			preIP = tfSSHIP.getText();
+		}
+	}
+	
+	
 
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() throws Exception{
-		UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-		this.setBounds(100, 100, 540, 495);
+		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		ToolTipManager.sharedInstance().setInitialDelay(100);
+		this.setBounds(100, 100, 563, 495);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.getContentPane().setLayout(null);
 		JButton cltCnnButton = new JButton(Strings.getString("MainWindow.cltCnnButton.text")); 
-		//		this.getRootPane().setDefaultButton(cltCnnButton);
+		cltCnnButton.setToolTipText(Strings.getString("MainWindow.cltCnnButton.toolTipText")); //$NON-NLS-1$
+		//this.getRootPane().setDefaultButton(cltCnnButton);
 		cltCnnButton.addActionListener(new CltCnnBtnListener());
-		cltCnnButton.setBounds(377, 16, 135, 60);
+		cltCnnButton.setBounds(405, 16, 135, 60);
 		this.getContentPane().add(cltCnnButton);
 		tfCltIP = new JTextField();
 		tfCltIP.setToolTipText(Strings.getString("MainWindow.tfCltIP.toolTipText")); 
-		tfCltIP.setBounds(115, 16, 245, 23);
+		tfCltIP.setBounds(115, 16, 275, 23);
+		tfCltIP.addFocusListener(new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				new Thread(new inflateTemplateThread()).start();
+			}
+			
+			@Override
+			public void focusGained(FocusEvent e) {
+				// TODO Auto-generated method stub
+			}
+		});
 		this.getContentPane().add(tfCltIP);
 		tfCltIP.setColumns(10);
 
@@ -197,7 +260,7 @@ public class MainWindow extends JFrame {
 		lblCltIP.setBounds(20, 16, 102, 23);
 		this.getContentPane().add(lblCltIP);
 		JScrollPane sp = new JScrollPane(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		sp.setBounds(20, 340, 492, 117);
+		sp.setBounds(20, 340, 520, 117);
 		getContentPane().add(sp);
 		txaInfo = new JTextArea();
 		txaInfo.setLineWrap(true);
@@ -207,67 +270,71 @@ public class MainWindow extends JFrame {
 		sp.setViewportView(txaInfo);
 
 		JLabel lblSSHIP = new JLabel(Strings.getString("MainWindow.lblSSHIP.text")); 
-		lblSSHIP.setBounds(20, 201, 102, 23);
+		lblSSHIP.setBounds(20, 90, 102, 23);
 		this.getContentPane().add(lblSSHIP);
 
 		tfSSHIP = new JTextField();
-		tfSSHIP.setBounds(115, 201, 245, 23);
+		tfSSHIP.setToolTipText(Strings.getString("MainWindow.tfSSHIP.toolTipText")); //$NON-NLS-1$
+		tfSSHIP.setBounds(115, 90, 275, 23);
+		tfSSHIP.addFocusListener(new AssetIPTfFoucusListener());
 		this.getContentPane().add(tfSSHIP);
 		tfSSHIP.setColumns(10);
 
 		JLabel lblSSHPort = new JLabel(Strings.getString("MainWindow.lblSSHPort.text")); 
-		lblSSHPort.setBounds(20, 90, 102, 23);
+		lblSSHPort.setBounds(20, 127, 102, 23);
 		this.getContentPane().add(lblSSHPort);
 
 		tfSSHPort = new JTextField();
-		tfSSHPort.setBounds(115, 90, 245, 23);
+		tfSSHPort.setToolTipText(Strings.getString("MainWindow.tfSSHPort.toolTipText")); //$NON-NLS-1$
+		tfSSHPort.setBounds(115, 127, 275, 23);
 		this.getContentPane().add(tfSSHPort);
 		tfSSHPort.setColumns(10);
 
 		JLabel lblUserName = new JLabel(Strings.getString("MainWindow.lblUserName.text")); 
-		lblUserName.setBounds(20, 127, 102, 23);
+		lblUserName.setBounds(20, 164, 102, 23);
 		this.getContentPane().add(lblUserName);
 
 		tfUserName = new JTextField();
-		tfUserName.setBounds(115, 127, 245, 23);
+		tfUserName.setBounds(115, 164, 275, 23);
 		this.getContentPane().add(tfUserName);
 		tfUserName.setColumns(10);
 
 		JLabel lblPwd = new JLabel(Strings.getString("MainWindow.lblPwd.text")); 
-		lblPwd.setBounds(20, 164, 102, 23);
+		lblPwd.setBounds(20, 201, 102, 23);
 		this.getContentPane().add(lblPwd);
 
 		tfPwd = new JPasswordField();
-		tfPwd.setBounds(115, 164, 245, 23);
+		tfPwd.setBounds(115, 201, 275, 23);
 		this.getContentPane().add(tfPwd);
 		tfPwd.setColumns(10);
 
 		JButton btnSSHCnn = new JButton(Strings.getString("MainWindow.btnSSHCnn.text")); 
+		btnSSHCnn.setToolTipText(Strings.getString("MainWindow.btnSSHCnn.toolTipText")); //$NON-NLS-1$
 		btnSSHCnn.addActionListener(new SSHCnnBtnListener());
-		btnSSHCnn.setBounds(377, 164, 135, 60);
+		btnSSHCnn.setBounds(405, 164, 135, 60);
 		this.getContentPane().add(btnSSHCnn);
 
 		JLabel lblModelTpl = new JLabel(Strings.getString("MainWindow.lblModelTpl.text")); 
-		lblModelTpl.setBounds(20, 240, 90, 23);
+		lblModelTpl.setBounds(20, 238, 90, 23);
 		getContentPane().add(lblModelTpl);
 
 		JLabel lblPlatformIP = new JLabel(Strings.getString("MainWindow.lblPlatformIP.text")); 
 		lblPlatformIP.setBounds(20, 53, 102, 23);
 		getContentPane().add(lblPlatformIP);
 
-		JComboBox cbModelTpl = new JComboBox(ModelTplStrings);
+		cbModelTpl = new JComboBox(ModelTplStrings);
 		cbModelTpl.setSelectedIndex(0);
-		cbModelTpl.setBounds(115, 240, 79, 21);
+		cbModelTpl.setBounds(115, 238, 98, 21);
 		getContentPane().add(cbModelTpl);
 		cbModelTpl.addActionListener(new ModelTplCmbtnListener());
 
 		JLabel lblCmd = new JLabel(Strings.getString("MainWindow.lblCmd.text")); 
-		lblCmd.setBounds(199, 240, 36, 23);
+		lblCmd.setBounds(219, 238, 36, 23);
 		getContentPane().add(lblCmd);
 
 		JComboBox cbCmd = new JComboBox(codeStringsCHS);
 		cbCmd.setSelectedIndex(0);
-		cbCmd.setBounds(234, 241, 126, 21);
+		cbCmd.setBounds(254, 238, 135, 21);
 		getContentPane().add(cbCmd);
 		cbCmd.addActionListener(new CodeCmbtnListener());
 
@@ -275,21 +342,23 @@ public class MainWindow extends JFrame {
 		lblCollectType.setBounds(20, 307, 90, 23);
 		getContentPane().add(lblCollectType);
 
-		JRadioButton rdbtnDefault = new JRadioButton(Strings.getString("MainWindow.rdbtnDefault.text")); 
+		rdbtnDefault = new JRadioButton(Strings.getString("MainWindow.rdbtnDefault.text"));
 		rdbtnDefault.setSelected(true);
 		rdbtnDefault.setBounds(115, 307, 73, 23);
 		getContentPane().add(rdbtnDefault);
 		rdbtnDefault.setActionCommand(Strings.getString("MainWindow.rdbtnDefault.actionCommand")); 
 		rdbtnDefault.addActionListener(new CollectTypeRdbtnListener());
 
-		JRadioButton rdbtnLocal = new JRadioButton(Strings.getString("MainWindow.rdbtnLocal.text")); 
-		rdbtnLocal.setBounds(190, 307, 73, 23);
+		rdbtnLocal = new JRadioButton(Strings.getString("MainWindow.rdbtnLocal.text")); 
+		rdbtnLocal.setToolTipText(Strings.getString("MainWindow.rdbtnLocal.toolTipText")); //$NON-NLS-1$
+		rdbtnLocal.setBounds(195, 307, 73, 23);
 		getContentPane().add(rdbtnLocal);
 		rdbtnLocal.setActionCommand(Strings.getString("MainWindow.rdbtnLocal.actionCommand")); 
 		rdbtnLocal.addActionListener(new CollectTypeRdbtnListener());
 
-		JRadioButton rdbtnLocalSSH = new JRadioButton(Strings.getString("MainWindow.rdbtnLocalSSH.text")); 
-		rdbtnLocalSSH.setBounds(270, 307, 85, 23);
+		rdbtnLocalSSH = new JRadioButton(Strings.getString("MainWindow.rdbtnLocalSSH.text")); 
+		rdbtnLocalSSH.setToolTipText(Strings.getString("MainWindow.rdbtnLocalSSH.toolTipText")); //$NON-NLS-1$
+		rdbtnLocalSSH.setBounds(275, 307, 85, 23);
 		getContentPane().add(rdbtnLocalSSH);
 		rdbtnLocalSSH.setActionCommand(Strings.getString("MainWindow.rdbtnLocalSSH.actionCommand")); 
 		rdbtnLocalSSH.addActionListener(new CollectTypeRdbtnListener());
@@ -300,27 +369,30 @@ public class MainWindow extends JFrame {
 		btnGp.add(rdbtnLocalSSH);
 
 		tfPlatformIP = new JTextField();
+		tfPlatformIP.setToolTipText(Strings.getString("MainWindow.tfPlatformIP.toolTipText")); //$NON-NLS-1$
 		tfPlatformIP.setColumns(10);
-		tfPlatformIP.setBounds(115, 53, 245, 23);
+		tfPlatformIP.setBounds(115, 53, 275, 23);
 		getContentPane().add(tfPlatformIP);
 
 		JButton btnSendCmd = new JButton(Strings.getString("MainWindow.btnSendCmd.text")); 
+		btnSendCmd.setToolTipText(Strings.getString("MainWindow.btnSendCmd.toolTipText")); //$NON-NLS-1$
 		btnSendCmd.addActionListener(new SendCmdBtnListener());
-		btnSendCmd.setBounds(377, 241, 135, 59);
+		btnSendCmd.setBounds(405, 238, 135, 60);
 		getContentPane().add(btnSendCmd);
 
 		JLabel lblAssetID = new JLabel(Strings.getString("MainWindow.lblAssetID.text"));
-		lblAssetID.setBounds(20, 277, 102, 23);
+		lblAssetID.setBounds(20, 275, 102, 23);
 		getContentPane().add(lblAssetID);
 
 		tfAssetID = new JTextField();
 		tfAssetID.setColumns(10);
-		tfAssetID.setBounds(115, 277, 245, 23);
+		tfAssetID.setBounds(115, 275, 275, 23);
 		getContentPane().add(tfAssetID);
 		
 		JButton btnResCnn = new JButton(Strings.getString("MainWindow.btnResCnn.text")); 
+		btnResCnn.setToolTipText(Strings.getString("MainWindow.btnResCnn.toolTipText")); //$NON-NLS-1$
 		btnResCnn.addActionListener(new ResCnnBtnListener());
-		btnResCnn.setBounds(377, 90, 135, 60);
+		btnResCnn.setBounds(405, 90, 135, 60);
 		getContentPane().add(btnResCnn);
 
 	}
@@ -341,10 +413,12 @@ public class MainWindow extends JFrame {
 				}
 			}else{
 				sb.append("采集设备ID不能为空");
+				tfAssetID.requestFocusInWindow();
 			}
 
 		}else{
-			sb.append("IP不能为空！");
+			sb.append("采集服务器IP不能为空！");
+			tfCltIP.requestFocusInWindow();
 		}
 		return sb.toString();		
 	}
@@ -355,7 +429,13 @@ public class MainWindow extends JFrame {
 		CollectService collectService;
 		String url = getFullRMIURL(cltIP);
 		if("".equals(url)){
+			tfCltIP.requestFocusInWindow();
 			return "采集服务器IP不能为空！";
+		}
+		String modeltplt = (String)cbModelTpl.getSelectedItem();
+		if(modeltplt == null || "".equals(modeltplt)){
+			cbModelTpl.requestFocus();
+			return "设备品牌模板不能为空！";
 		}
 		if(!"".equals(tfPlatformIP.getText())){
 			try {
@@ -366,6 +446,7 @@ public class MainWindow extends JFrame {
 				sb.append("采集服务器连接失败!\n" + e.getMessage());
 			}
 		}else{
+			tfPlatformIP.requestFocusInWindow();
 			sb.append("应用服务器IP不能为空！");
 		}
 		return sb.toString();
@@ -376,6 +457,7 @@ public class MainWindow extends JFrame {
 		CollectService collectService;
 		String url = getFullRMIURL(cltIP);
 		if("".equals(url)){
+			tfCltIP.requestFocusInWindow();
 			return "采集服务器IP不能为空！";
 		}
 		if(!"".equals(msg.getIP())){
@@ -388,6 +470,7 @@ public class MainWindow extends JFrame {
 			}
 		}else{
 			sb.append("设备SSH地址不能为空！");
+			tfSSHIP.requestFocusInWindow();
 		}
 		return sb.toString();
 	}
@@ -408,6 +491,7 @@ public class MainWindow extends JFrame {
 				sb.append("采集服务器连接失败!\n" + e.getMessage());
 			}
 		}else{
+			tfCltIP.requestFocusInWindow();
 			sb.append("采集服务器IP不能为空！");
 		}
 		return sb.toString();
@@ -424,6 +508,7 @@ public class MainWindow extends JFrame {
 		}
 		return url;
 	}
+	
 	private String getResURL(String platformIP){
 		String url = "http://127.0.0.1:8080/hmp/resourceGetter_get.action";
 		if(platformIP != null && !"".equals(platformIP)){
@@ -455,5 +540,52 @@ public class MainWindow extends JFrame {
 			return true;
 		}
 		return false;
+	}
+	
+	private class AssetInfoSetThread implements Runnable{
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			Message msg = inflateMessage();
+			msg.setCode("getassetinfobyip");
+			try {
+				CollectService collectService = (CollectService)Naming.lookup(getFullRMIURL(tfCltIP.getText()));
+				String ret = collectService.dowork(msg);
+				if(ret != null && !"".equals(ret)){
+					String rs[] = ret.split(",");
+					tfAssetID.setText(rs[0]);
+					cbModelTpl.setSelectedItem(rs[1]);
+				}
+			} catch (Exception e1) {
+			}
+		}
+		
+	}
+	
+	private class inflateTemplateThread implements Runnable{
+
+		@Override
+		public void run() {
+			// TODO Auto-generated method stub
+			Message msg = inflateMessage();
+			msg.setCode("getalltemplate");
+			try {
+				CollectService collectService = (CollectService)Naming.lookup(getFullRMIURL(tfCltIP.getText()));
+				String ret = collectService.dowork(msg);
+				if(ret != null && !"".equals(ret.trim())){
+					Object oldItem = cbModelTpl.getSelectedItem();
+					String rs[] = ret.split(" ");
+					Arrays.sort(rs);
+					cbModelTpl.removeAllItems();
+					for(String item:rs){
+						cbModelTpl.addItem(item);
+					}
+					cbModelTpl.setSelectedItem(oldItem);
+				}
+			} catch (Exception e1) {
+			}
+		}
+		
 	}
 }
