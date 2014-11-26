@@ -1,0 +1,100 @@
+
+
+===============================调试模式下的命令=================================
+
+注：开启调试模式后，采集器将记录采集器的所有运行信息， 要执行相关命令，必须先开启调试模式
+
+开启调试模式(默认开启)
+--url 127.0.0.1:6600 --command startdebug
+
+停止调试模式
+--url 127.0.0.1:6600 --command stopdebug 
+
+开始采集(默认开启)
+--url 127.0.0.1:6600 --command startcollect
+
+停止采集
+--url 127.0.0.1:6600 --command stopcollect 
+
+重置（清空）所有采集器信息
+--url 127.0.0.1:6600 --command resetallinfo
+
+重启采集器(清空所有采集池和缓冲池并重置所有采集器信息)
+--url 127.0.0.1:6600 --command reboot
+
+显示所有计数信息 （采集器请求数、被抛弃的请求数、加入到池的采集器数、从池中移除的采集器数）
+--url 127.0.0.1:6600 --command showcountinfo
+
+每个IP开始采集时间、结束采集时间、采集次数
+--url 127.0.0.1:6600 --command showhistory
+
+显示IP统计信息
+--url 127.0.0.1:6600 --command showstatis
+
+显示所有采集器信息
+--url 127.0.0.1:6600 --command showallinfo
+--url 127.0.0.1:6600 --command showallinfo >> collectlog.txt 输出到txt
+
+显示所有记录中的IP的SSH是否连通
+--url 127.0.0.1:6600 --command showsshinfo
+
+===================================常规命令===================================
+
+注：常规命令可在任何模式下执行，是采集器最基本的操作命令
+
+测试配置连通性
+--url 127.0.0.1:6600 --command showresourceinfo --brandtemplate HP_BLADE --resurl http://192.168.1.100:8080/hmp/resourceGetter_get.action
+
+测试数据库连通性
+--url 127.0.0.1:6600 --command showdbconninfo
+
+显示采集池最大容量
+--url 127.0.0.1:6600 --command maxsize
+
+修改采集池最大容量
+--url 127.0.0.1:6600 --command setmaxsize(20)
+
+列出采集器池采集器数量
+--url 127.0.0.1:6600 --command listsize
+--url 127.0.0.1:6600 --command listsize
+
+列出缓冲池采集器数量
+--url 127.0.0.1:6600 --command cachesize
+
+显示采集器池采集器信息
+--url 127.0.0.1:6600 --command showpoolinfo
+
+显示缓冲池采集器信息
+--url 127.0.0.1:6600 --command showcachepoolinfo
+
+显示采集器到某个采集服务器的SSH是否连通
+--url 127.0.0.1:6600 --command showsshinfo --ip 192.168.1.38 --port 22 -username fastech --password 123456
+
+显示系统信息（cpu使用率，内存使用率）
+--url 127.0.0.1:6600 --command showsysteminfo
+
+建立一个采集器
+--url 127.0.0.1:6600 --command buildcollector [--testtype local/localssh] --ip csip --port csport --brandtemplate brandtemplate --assetid assetid --username username --password password -resurl resurl
+--url 127.0.0.1:6600 --command buildcollector --testtype localssh --ip 10.212.163.111 --port 26 --brandtemplate HP_BLADE --assetid 0 --username root --password PassWBHJ@2 --resurl http://192.168.1.100:8080/hmp/resourceGetter_get.action
+--url 127.0.0.1:6600 --command buildcollector --ip 10.211.143.80 --port 22 --brandtemplate HUAWEI_FRAME --assetid 0 --username root --password Huawei12#$ --resurl http://127.0.0.1:8080/hmp/resourceGetter_get.action
+--url 127.0.0.1:6600 --command buildcollector --testtype local --ip 192.168.1.38 --port 22  --brandtemplate HP_FRAME --assetid 0 --username fastech --password 123456 --resurl http://127.0.0.1:8080/hmp/resourceGetter_get.action
+--url 127.0.0.1:6600 --command buildcollector --testtype localssh --ip 192.168.1.38 --port 22  --brandtemplate HP_BLADE --assetid 0 --username fastech --password 123456 --resurl http://127.0.0.1:8080/hmp/resourceGetter_get.action
+
+建立多个采集测试
+--url 127.0.0.1:6600 --test csnumber [--testtype local/localssh] [--brandtemplate brandtemplate --assetid assetid]
+--url 127.0.0.1:6600 --test 100 
+--url 127.0.0.1:6600 --test 100 --testtype local
+--url 127.0.0.1:6600 --test 100 --testtype localssh
+--url 127.0.0.1:6600 --test 1 --testtype local
+
+--url 127.0.0.1:6600 --test 100 --brandtemplate HP_BLADE --assetid 402880fb47f2734e0147f27862790002 
+--url 127.0.0.1:6600 --test 100 --testtype local --brandtemplate DELL_BLADE --assetid 402880fb47f2734e0147f27862790003
+--url 127.0.0.1:6600 --test 1 --testtype localssh --brandtemplate HP_FRAME --assetid 402880fb47f2734e0147f27862790234
+--url 127.0.0.1:6600 --test 1 --testtype local --brandtemplate DELL_BLADE --assetid 402880fb47f2734e0147f27862790003
+--url 127.0.0.1:6600 --test 1 --testtype local --brandtemplate HP_FRAME --assetid 402880fb47f2734e0147f27862790004
+
+定时采集器：
+测四个品牌（定时5分钟）：
+--url 127.0.0.1:6600 --loop 1000 --timer 5 --testtype local
+测某个品牌（定时5分钟）：
+--url 127.0.0.1:6600 --loop 1500 --timer 5 --testtype local --brandtemplate DELL_BLADE
